@@ -31,12 +31,44 @@ app.post("/registerC", (req, res) => {
     age: req.body.age,
     email: req.body.email,
     password: req.body.password,
-    maaş: req.body.password,
-    güncelbakiye: req.body.bakiye,
+    maaş: req.body.maaş,
+    bakiye: req.body.bakiye,
     role: "Müşteri",
   };
   new database.CRUD("Ibank", "customer").insert(newCustomer);
   return res.json(newCustomer);
+});
+
+app.post("/bakiyeG", async (req, res) => {
+  const { email, password, miktar } = req.body;
+
+  const artanMiktar = miktar > 0 ? miktar : 0;
+  const azalanMiktar = miktar < 0 ? -miktar : 0;
+
+  const result = await new database.CRUD("Ibank", "customer").update(
+    { email: email, password: password },
+    { $inc: { bakiye: artanMiktar - azalanMiktar } }
+  );
+
+  if (result.modifiedCount > 0) {
+    return res.json("Bakiye güncellendi");
+  } else {
+    return res.json("Kullanıcı bulunamadı veya bakiye güncellenmedi");
+  }
+});
+
+app.post("/login", async (req, res) => {
+  checkUser = req.body;
+  var check = await new database.CRUD("Ibank", "customer").find({
+    $and: [{ email: checkUser.email }, { password: checkUser.password }],
+  });
+  if (check.length > 0) {
+    // Kullanıcı bulundu, başarılı giriş yapabilir
+    return res.json({ message: "Başarıyla giriş yapıldı.", user: check.name });
+  } else {
+    // Kullanıcı bulunamadı, başarısız giriş
+    return res.status(401).json({ error: "Giriş bilgileri geçersiz." });
+  }
 });
 
 const PORT = process.env.PORT || 3000; // varsayılan olarak 3000 portunu kullan
