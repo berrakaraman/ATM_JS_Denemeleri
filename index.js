@@ -23,6 +23,21 @@ app.post("/register", (req, res) => {
   new database.CRUD("Ibank", "personel").insert(newPersonel);
   return res.json(newPersonel);
 });
+
+app.post("/loginP", async (req, res) => {
+  checkUser = req.body;
+  var check = await new database.CRUD("Ibank", "personel").find({
+    $and: [{ email: checkUser.email }, { password: checkUser.password }],
+  });
+  if (check.length > 0) {
+    // Kullanıcı bulundu, başarılı giriş yapabilir
+    return res.json({ message: "Başarıyla giriş yapıldı.", user: check.name });
+  } else {
+    // Kullanıcı bulunamadı, başarısız giriş
+    return res.status(401).json({ error: "Giriş bilgileri geçersiz." });
+  }
+});
+
 app.post("/registerC", (req, res) => {
   const newCustomer = {
     user_id: "2",
@@ -68,6 +83,34 @@ app.post("/login", async (req, res) => {
   } else {
     // Kullanıcı bulunamadı, başarısız giriş
     return res.status(401).json({ error: "Giriş bilgileri geçersiz." });
+  }
+});
+
+app.post("/bakiyeSorgu", async (req, res) => {
+  const { email, password } = req.body;
+  var user = await new database.CRUD("Ibank", "customer").find({
+    $and: [{ email: email }, { password: password }],
+  });
+  return res.json(user[0].bakiye); // find sorgusu dizi döndüğü için
+});
+
+app.post("/yenisifre", async (req, res) => {
+  const { email, currentpassword, newpassword } = req.body;
+  /*var user = await new database.CRUD("Ibank", "customer").find({
+    $and: [{ email: email }, { password: currentpassword }],
+  });*/
+
+  var result = await new database.CRUD("Ibank", "customer").update(
+    { email: email, password: currentpassword },
+    { $set: { password: newpassword } }
+  );
+  if (result.modifiedCount > 0) {
+    return res.json("Şifre başarıyla değiştirildi.");
+  } else {
+    // Güncelleme başarısızsa uygun bir hata mesajı döndürün
+    return res
+      .status(500)
+      .json({ error: "Şifre güncellenirken bir hata oluştu." });
   }
 });
 
